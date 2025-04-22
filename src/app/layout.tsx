@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import "./globals.css";
 import Navbar from "@/components/ui/navbar";
+import { ImageProvider } from "./providers/ImageProvider";
+import { FilterProvider } from "./providers/operationProvider";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -23,8 +25,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Navbar />
-          {children}
+          <ImageProvider>
+            <Navbar />
+            <FilterProvider>{children}</FilterProvider>
+          </ImageProvider>
         </ThemeProvider>
       </body>
     </html>

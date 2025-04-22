@@ -6,22 +6,56 @@ import { Menu } from "lucide-react";
 import { ModeToggle } from "./mode";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { useImageContext } from "@/app/providers/ImageProvider";
+import { useRef } from "react";
+
+export function FileUploadButton({
+  handleChange,
+}: {
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleClick = () => {
+    inputRef.current?.click();
+  };
+
+  return (
+    <>
+      <input
+        type="file"
+        accept="image/*"
+        ref={inputRef}
+        onChange={handleChange}
+        className="hidden"
+      />
+      <Button
+        variant="secondary"
+        className="text-sm font-medium"
+        type="button"
+        onClick={handleClick}
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        Select Image
+      </Button>
+    </>
+  );
+}
 
 export default function Navbar() {
-  const [name, setName] = useState("Areen");
-  const [age, setAge] = useState(18);
-  const [occupation, setOccupation] = useState("Developer");
-
+  const { setImage, setPreviewUrl } = useImageContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const router = useRouter();
 
   const logo = "/logo.png";
 
-  const profileImage = "/images/user.png";
-
-  const signOut = async () => {};
+  const handleChange = (e: any) => {
+    const file = e.target.files[0];
+    setImage(file);
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -71,12 +105,7 @@ export default function Navbar() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button
-                    variant={"secondary"}
-                    className={`text-sm font-medium`}
-                  >
-                    <Plus /> Select Image
-                  </Button>
+                  <FileUploadButton handleChange={handleChange} />
                 </motion.div>
               }
             </div>

@@ -13,6 +13,8 @@ interface FilterContextType {
   setIsOpening: (value: boolean) => void;
   isClosing: boolean;
   setIsClosing: (value: boolean) => void;
+  isEdge: boolean;
+  setIsEdge: (value: boolean) => void;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -23,6 +25,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const [isOpening, setIsOpening] = useState<boolean>(false);
   const [isClosing, setIsClosing] = useState<boolean>(false);
   const [isImageLoaded, setIsImageLoaded] = useState<boolean>(true);
+  const [isEdge, setIsEdge] = useState<boolean>(false);
 
   return (
     <FilterContext.Provider
@@ -37,6 +40,8 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
         setIsOpening,
         isClosing,
         setIsClosing,
+        isEdge,
+        setIsEdge,
       }}
     >
       {children}

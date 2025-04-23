@@ -104,5 +104,56 @@ def morphology():
 
 
 
+@app.route('/flip', methods=['POST'])
+def flip_image():
+    file = request.files['image']
+    flip_type = int(request.form.get('flipType', 0))
+    image = Image.open(file.stream).convert("RGB")
+    image_np = np.array(image)
+
+    if flip_type == 0:
+        flipped = cv2.flip(image_np, 0)
+    elif flip_type == 1:
+        flipped = cv2.flip(image_np, 1)
+    elif flip_type == 99:  
+        flipped = image_np
+    else:
+        return jsonify({"error": "Invalid flip type"}), 400
+
+    flipped_image = Image.fromarray(flipped)
+    buffer = io.BytesIO()
+    flipped_image.save(buffer, format="PNG")
+    base64_img = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    return jsonify({
+        "flipped_image": base64_img
+    })
+
+
+@app.route('/edge', methods=['POST'])
+def edge_detect():
+    file = request.files['image']
+    image = Image.open(file.stream).convert("RGB")
+    image_np = np.array(image)
+
+    
+    gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+
+    edges = cv2.Canny(gray, threshold1=100, threshold2=200)
+
+    edges_rgb = cv2.cvtColor(edges, cv2.COLOR_GRAY2RGB)
+
+    edge_image = Image.fromarray(edges_rgb)
+    buffer = io.BytesIO()
+    edge_image.save(buffer, format="PNG")
+    base64_img = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    return jsonify({
+        "edge_image": base64_img
+    })
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)

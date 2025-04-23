@@ -9,6 +9,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useFilterContext } from "@/app/providers/operationProvider";
+import { set } from "lodash";
 
 export function AppSidebar() {
   const {
@@ -17,6 +18,7 @@ export function AppSidebar() {
     setIsOpening,
     setIsClosing,
     setIsImageLoaded,
+    setIsEdge,
   } = useFilterContext();
 
   return (
@@ -34,6 +36,7 @@ export function AppSidebar() {
                     setIsOpening(false);
                     setIsClosing(false);
                     setIsImageLoaded(true);
+                    setIsEdge(false);
                   }}
                 >
                   <svg
@@ -61,6 +64,7 @@ export function AppSidebar() {
                     setIsOpening(false);
                     setIsClosing(false);
                     setIsImageLoaded(false);
+                    setIsEdge(false);
                   }}
                 >
                   <svg
@@ -88,6 +92,7 @@ export function AppSidebar() {
                     setIsOpening(false);
                     setIsClosing(false);
                     setIsImageLoaded(false);
+                    setIsEdge(false);
                   }}
                 >
                   <svg
@@ -115,6 +120,7 @@ export function AppSidebar() {
                     setIsOpening(true);
                     setIsClosing(false);
                     setIsImageLoaded(false);
+                    setIsEdge(false);
                   }}
                 >
                   <svg
@@ -142,6 +148,7 @@ export function AppSidebar() {
                     setIsOpening(false);
                     setIsClosing(true);
                     setIsImageLoaded(false);
+                    setIsEdge(false);
                   }}
                 >
                   <svg
@@ -159,6 +166,34 @@ export function AppSidebar() {
                     />
                   </svg>
                   <span>Closing</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => {
+                    setIsErosion(false);
+                    setIsDilation(false);
+                    setIsOpening(false);
+                    setIsClosing(false);
+                    setIsImageLoaded(false);
+                    setIsEdge(true);
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  <span>Edge detect</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

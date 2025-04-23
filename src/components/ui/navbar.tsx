@@ -46,7 +46,7 @@ export function FileUploadButton({
 
 export default function Navbar() {
   const { setImage, setPreviewUrl } = useImageContext();
-  const { isClosing, isDilation, isErosion, isOpening, isImageLoaded } =
+  const { isClosing, isDilation, isErosion, isOpening, isImageLoaded, isEdge } =
     useFilterContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -116,7 +116,7 @@ export default function Navbar() {
                     {isDilation && "Dilation"}
                     {isClosing && "Closing"}
                     {isOpening && "Opening"}
-
+                    {isEdge && "Edge Dectection"}
                     {isImageLoaded &&
                       !isErosion &&
                       !isDilation &&

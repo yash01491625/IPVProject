@@ -7,6 +7,10 @@ import { useImageContext } from "./providers/ImageProvider";
 import ModifiedChart from "@/components/ui/modified-chart";
 import { useFilterContext } from "./providers/operationProvider";
 import { Slider } from "@/components/ui/slider";
+import { debounce, set } from "lodash";
+import { useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { FlipHorizontal, FlipVertical } from "lucide-react";
 
 const Morphology = ({ operation }: { operation: string }) => {
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
@@ -30,13 +34,20 @@ const Morphology = ({ operation }: { operation: string }) => {
     setProcessedUrl(`data:image/png;base64,${data.processed}`);
   };
 
+  const debouncedSendImageForProcessing = useCallback(
+    debounce((image: File) => {
+      sendImageForProcessing(image);
+    }, 500),
+    [kernelSize, kernelType]
+  );
+
   useEffect(() => {
     setProcessedUrl(null);
   }, []);
 
   useEffect(() => {
     if (image) {
-      sendImageForProcessing(image);
+      debouncedSendImageForProcessing(image);
     }
   }, [kernelSize, kernelType]);
 
@@ -182,9 +193,123 @@ const Morphology = ({ operation }: { operation: string }) => {
   );
 };
 
+const ImageLoaded = () => {
+  const { previewUrl, setPreviewUrl, image, setImage } = useImageContext();
+  const [flipType, setFlipType] = useState(99);
+
+  const sendImageForProcessing = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("flipType", flipType.toString());
+
+    const res = await fetch(`http://localhost:5000/flip`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    const base64Img = data.flipped_image;
+    setPreviewUrl(`data:image/png;base64,${data.flipped_image}`);
+
+    const byteCharacters = atob(base64Img);
+    const byteNumbers = new Array(byteCharacters.length)
+      .fill(0)
+      .map((_, i) => byteCharacters.charCodeAt(i));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: "image/png" });
+    const newFile = new File([blob], "flipped.png", { type: "image/png" });
+    setImage(newFile);
+  };
+
+  useEffect(() => {
+    if (image) {
+      sendImageForProcessing(image);
+    }
+  }, [flipType]);
+
+  return (
+    <div
+      className={`h-180 w-190 ${previewUrl ? "bg-card" : "bg-muted"}  ${
+        previewUrl ? " border-muted border-2" : ""
+      } rounded-md p-2 ${previewUrl ? "" : "animate-pulse"}`}
+    >
+      <Button
+        variant="outline"
+        className={` mt-18 absolute top-5 right-95 hover:scale-95 transition-all duration-200 ease-in-out active:scale-90`}
+        onClick={() => {
+          setFlipType((prev) => (prev === 1 ? 99 : 1));
+        }}
+      >
+        <FlipHorizontal />
+      </Button>
+      <Button
+        variant="outline"
+        className="mt-18 absolute top-5 right-82 hover:scale-95 transition-all duration-200 ease-in-out active:scale-90"
+        onClick={() => {
+          setFlipType((prev) => (prev === 0 ? 99 : 0));
+        }}
+      >
+        <FlipVertical />
+      </Button>
+
+      {previewUrl && (
+        <Image
+          src={previewUrl}
+          alt="Preview"
+          height={250}
+          width={250}
+          className="rounded-md object-contain w-full h-full"
+        />
+      )}
+    </div>
+  );
+};
+
+const Edge = () => {
+  const { image, previewUrl, setPreviewUrl } = useImageContext();
+
+  const sendImageForProcessing = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+
+    const res = await fetch(`http://localhost:5000/edge`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    setPreviewUrl(`data:image/png;base64,${data.edge_image}`);
+  };
+
+  useEffect(() => {
+    if (image) {
+      sendImageForProcessing(image);
+    }
+  }, [image]);
+
+  return (
+    <div
+      className={`h-180 w-190 ${previewUrl ? "bg-card" : "bg-muted"}  ${
+        previewUrl ? " border-muted border-2" : ""
+      } rounded-md p-2 ${previewUrl ? "" : "animate-pulse"}`}
+    >
+      {previewUrl && (
+        <Image
+          src={previewUrl}
+          alt="Preview"
+          height={250}
+          width={250}
+          className="rounded-md object-contain w-full h-full"
+        />
+      )}
+    </div>
+  );
+};
+
 export default function Home() {
   const { image, previewUrl } = useImageContext();
-  const { isErosion, isDilation, isOpening, isClosing, isImageLoaded } =
+  const { isErosion, isDilation, isOpening, isClosing, isImageLoaded, isEdge } =
     useFilterContext();
 
   const [histogramData, setHistogramData] = useState<number[]>([]);
@@ -230,29 +355,12 @@ export default function Home() {
         <div className="w-[83vw] grid grid-cols-5 gap-4">
           <div className="w-full col-span-4 border-r-2 border-solid border-muted">
             <div className="mt-28 flex justify-center items-center">
-              {isImageLoaded && (
-                <div
-                  className={`h-180 w-190 ${
-                    previewUrl ? "bg-card" : "bg-muted"
-                  }  ${
-                    previewUrl ? " border-muted border-2" : ""
-                  } rounded-md p-2  ${previewUrl ? "" : "animate-pulse"}`}
-                >
-                  {previewUrl && (
-                    <Image
-                      src={previewUrl}
-                      alt="Preview"
-                      height={250}
-                      width={250}
-                      className="rounded-md object-contain w-full h-full"
-                    />
-                  )}
-                </div>
-              )}
+              {isImageLoaded && <ImageLoaded />}
               {isErosion && <Morphology operation="erosion" />}
               {isDilation && <Morphology operation="dilation" />}
               {isOpening && <Morphology operation="opening" />}
               {isClosing && <Morphology operation="closing" />}
+              {isEdge && <Edge />}
             </div>
           </div>
           <div className="w-full col-span-1">

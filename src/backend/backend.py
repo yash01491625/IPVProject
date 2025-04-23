@@ -4,9 +4,15 @@ import cv2
 import numpy as np
 from PIL import Image
 import io
+import base64 
+from flask import send_file
+
+
 
 app = Flask(__name__)
 CORS(app) 
+
+
 
 @app.route('/histogram', methods=['POST'])
 def process_image():
@@ -23,9 +29,7 @@ def process_image():
     })
 
 
-import io
-import base64
-from flask import send_file
+
 
 @app.route('/frequency', methods=['POST'])
 def frequency_domain():
@@ -52,11 +56,13 @@ def frequency_domain():
     })
 
 
-@app.route('/erosion', methods=['POST'])
-def erode_image():
+
+@app.route('/morphology', methods=['POST'])
+def morphology():
     file = request.files['image']
     kernel_type = request.form.get('kernelType', 'rect')
-    kernel_size = int(request.form.get('kernelSize', 5))  # default to 5
+    kernel_size = int(request.form.get('kernelSize', 5))
+    operation = request.form.get('operation', 'erosion')
 
     image = Image.open(file.stream).convert("L")
     image_np = np.array(image)
@@ -70,20 +76,31 @@ def erode_image():
     if kernel_type not in shape_map:
         return jsonify({"error": "Invalid kernel type"}), 400
 
+    if operation not in ['erosion', 'dilation', 'opening', 'closing']:
+        return jsonify({"error": "Invalid operation"}), 400
+
     kernel_shape = shape_map[kernel_type]
     kernel = cv2.getStructuringElement(kernel_shape, (kernel_size, kernel_size))
 
-    eroded = cv2.erode(image_np, kernel, iterations=1)
-
-    eroded_image = Image.fromarray(eroded)
+    if operation == 'erosion':
+        processed = cv2.erode(image_np, kernel, iterations=1)
+    elif operation == 'dilation':
+        processed = cv2.dilate(image_np, kernel, iterations=1)
+    elif operation == 'opening':
+        processed = cv2.morphologyEx(image_np, cv2.MORPH_OPEN, kernel)
+    elif operation == 'closing':
+        processed = cv2.morphologyEx(image_np, cv2.MORPH_CLOSE, kernel)
+    else:
+        return 'Invalid operation', 400
+    
+    processed_image = Image.fromarray(processed)
     buffer = io.BytesIO()
-    eroded_image.save(buffer, format="PNG")
+    processed_image.save(buffer, format="PNG")
     base64_img = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     return jsonify({
-        "eroded_image": base64_img
+        "processed": base64_img
     })
-
 
 
 

@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useImageContext } from "@/app/providers/ImageProvider";
 import { useRef } from "react";
+import { useFilterContext } from "@/app/providers/operationProvider";
 
 export function FileUploadButton({
   handleChange,
@@ -45,6 +46,8 @@ export function FileUploadButton({
 
 export default function Navbar() {
   const { setImage, setPreviewUrl } = useImageContext();
+  const { isClosing, isDilation, isErosion, isOpening, isImageLoaded } =
+    useFilterContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const logo = "/logo.png";
@@ -94,19 +97,34 @@ export default function Navbar() {
 
             <div className="hidden sm:flex sm:space-x-4">
               {
-                <motion.div
-                  key={"Select Image"}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.3,
-                    delay: 1 * 0.1,
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <FileUploadButton handleChange={handleChange} />
-                </motion.div>
+                <>
+                  <motion.div
+                    key={"Select Image"}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: 1 * 0.1,
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <FileUploadButton handleChange={handleChange} />
+                  </motion.div>
+                  <div className="ml-75 bg-secondary text-sm font-medium flex justify-center items-center rounded-md px-4 py-2 text-black dark:text-white">
+                    {isErosion && "Erosion"}
+                    {isDilation && "Dilation"}
+                    {isClosing && "Closing"}
+                    {isOpening && "Opening"}
+
+                    {isImageLoaded &&
+                      !isErosion &&
+                      !isDilation &&
+                      !isClosing &&
+                      !isOpening &&
+                      "Choose an Operation"}
+                  </div>
+                </>
               }
             </div>
           </div>

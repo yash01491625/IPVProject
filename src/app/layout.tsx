@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body>
+      <body style={{ overflow: "hidden" }}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -26,8 +26,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ImageProvider>
-            <Navbar />
-            <FilterProvider>{children}</FilterProvider>
+            <FilterProvider>
+              <Navbar />
+              {children}
+            </FilterProvider>
           </ImageProvider>
         </ThemeProvider>
       </body>

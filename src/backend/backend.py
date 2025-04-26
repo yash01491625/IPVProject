@@ -30,7 +30,6 @@ def process_image():
 
 
 
-
 @app.route('/frequency', methods=['POST'])
 def frequency_domain():
     file = request.files['image']
@@ -193,6 +192,74 @@ def extract_features():
         print(f"Error processing image: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+
+
+@app.route('/extract-two', methods=['POST'])
+def extract_human_features():
+    try:
+        file = request.files['image']
+        img = Image.open(file.stream).convert("RGB")
+        img_np = np.array(img)
+        img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+
+        classifiers = {
+            "frontal_faces": 'haarcascade_frontalface_default.xml',
+            "profile_faces": 'haarcascade_profileface.xml',
+            "eyes": 'haarcascade_eye.xml',
+            "eyes_with_glasses": 'haarcascade_eye_tree_eyeglasses.xml',
+            "smiles": 'haarcascade_smile.xml',
+            "full_bodies": 'haarcascade_fullbody.xml',
+            "upper_bodies": 'haarcascade_upperbody.xml',
+            "lower_bodies": 'haarcascade_lowerbody.xml'
+        }
+
+        features_to_highlight = {
+            "frontal_faces": (0, 255, 0),  
+            "profile_faces": (0, 255, 0),  
+            "full_bodies": (255, 0, 0),    
+        }
+
+        results = {}
+        detection_flags = {"faces_or_bodies": False}
+        detected_features = {}  
+        
+        for key, file_name in classifiers.items():
+            cascade = cv2.CascadeClassifier(cv2.data.haarcascades + file_name)
+            detections = cascade.detectMultiScale(gray, 1.1, 4)
+            results[key] = len(detections)
+            detected_features[key] = detections
+
+            if key in ["frontal_faces", "profile_faces", "full_bodies", "upper_bodies", "lower_bodies"] and len(detections) > 0:
+                detection_flags["faces_or_bodies"] = True
+
+        # Draw rectangles only for selected features
+        for feature, color in features_to_highlight.items():
+            if feature in detected_features:
+                for (x, y, w, h) in detected_features[feature]:
+                    thickness = 2
+                    cv2.rectangle(img_bgr, (x, y), (x + w, y + h), color, thickness)
+                    
+                    # Optionally add a label above the rectangle
+                    cv2.putText(img_bgr, feature.replace('_', ' '), 
+                                (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+
+        # Classify as Human or Not Human
+        classification = "Human" if detection_flags["faces_or_bodies"] else "Not Human"
+
+        # Encode the image to base64
+        _, buffer = cv2.imencode('.jpg', img_bgr)
+        img_bytes = buffer.tobytes()
+        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+
+        return jsonify({
+            "classification": classification,
+            "marked_image_base64": img_base64
+        })
+
+    except Exception as e:
+        print(f"Error processing image: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

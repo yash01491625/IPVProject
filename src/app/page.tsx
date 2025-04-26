@@ -320,7 +320,7 @@ const Edge = () => {
 };
 
 const Classifier = () => {
-  const { image, previewUrl } = useImageContext();
+  const { image, previewUrl, setPreviewUrl } = useImageContext();
   const [edgeCount, setEdgeCount] = useState<number>(0);
   const [aspectRatio, setAspectRatio] = useState<number>(0);
   const [brightness, setBrightness] = useState<number>(0);
@@ -415,6 +415,33 @@ const Classifier = () => {
     }, 500);
   };
 
+  const handleClassifyTwo = async () => {
+    if (!image) return;
+
+    setIsLoading(true);
+    const formData = new FormData();
+    formData.append("image", image);
+
+    try {
+      const res = await fetch("http://localhost:5000/extract-two", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to classify image");
+      }
+
+      const data = await res.json();
+
+      setPreviewUrl(`data:image/jpeg;base64,${data.marked_image_base64}`);
+      setClassification(data.classification);
+    } catch (error) {
+      console.error("Error during classification:", error);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     if (image) {
       sendImageForExtraction(image);
@@ -476,6 +503,9 @@ const Classifier = () => {
             </Button>
           </PopoverContent>
         </Popover>
+        <Button className="h-auto w-full" onClick={handleClassifyTwo}>
+          HC Classify
+        </Button>
       </div>
       <div
         className={`h-130 w-160 ${previewUrl ? "bg-card" : "bg-muted"}  ${

@@ -1,0 +1,1 @@
+marked_image_base64

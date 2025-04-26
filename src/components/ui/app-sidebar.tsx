@@ -13,6 +13,7 @@ import { set } from "lodash";
 
 export function AppSidebar() {
   const {
+    setIsClassifier,
     setIsErosion,
     setIsDilation,
     setIsOpening,
@@ -37,6 +38,7 @@ export function AppSidebar() {
                     setIsClosing(false);
                     setIsImageLoaded(true);
                     setIsEdge(false);
+                    setIsClassifier(false);
                   }}
                 >
                   <svg
@@ -65,6 +67,7 @@ export function AppSidebar() {
                     setIsClosing(false);
                     setIsImageLoaded(false);
                     setIsEdge(false);
+                    setIsClassifier(false);
                   }}
                 >
                   <svg
@@ -93,6 +96,7 @@ export function AppSidebar() {
                     setIsClosing(false);
                     setIsImageLoaded(false);
                     setIsEdge(false);
+                    setIsClassifier(false);
                   }}
                 >
                   <svg
@@ -121,6 +125,7 @@ export function AppSidebar() {
                     setIsClosing(false);
                     setIsImageLoaded(false);
                     setIsEdge(false);
+                    setIsClassifier(false);
                   }}
                 >
                   <svg
@@ -149,6 +154,7 @@ export function AppSidebar() {
                     setIsClosing(true);
                     setIsImageLoaded(false);
                     setIsEdge(false);
+                    setIsClassifier(false);
                   }}
                 >
                   <svg
@@ -177,6 +183,7 @@ export function AppSidebar() {
                     setIsClosing(false);
                     setIsImageLoaded(false);
                     setIsEdge(true);
+                    setIsClassifier(false);
                   }}
                 >
                   <svg
@@ -194,6 +201,35 @@ export function AppSidebar() {
                     />
                   </svg>
                   <span>Edge detect</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => {
+                    setIsErosion(false);
+                    setIsDilation(false);
+                    setIsOpening(false);
+                    setIsClosing(false);
+                    setIsImageLoaded(false);
+                    setIsEdge(false);
+                    setIsClassifier(true);
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  <span>Classifier</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

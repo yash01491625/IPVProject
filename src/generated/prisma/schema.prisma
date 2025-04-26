@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model TrainingData {
+  id          Int      @id @default(autoincrement())
+  edgeCount   Int
+  aspectRatio Float
+  brightness  Float
+  largestArea Int
+  symmetry    Float
+  label       String
+  createdAt   DateTime @default(now())
+}
+
+model TestingData {
+  id          Int      @id @default(autoincrement())
+  edgeCount   Int
+  aspectRatio Float
+  brightness  Float
+  largestArea Int
+  symmetry    Float
+  label       String
+  createdAt   DateTime @default(now())
+}
+
+model NewTrainingData {
+  id          Int      @id @default(autoincrement())
+  edgeCount   String
+  aspectRatio String
+  brightness  String
+  largestArea String
+  symmetry    String
+  label       String
+  createdAt   DateTime @default(now())
+}
+
+model NBMetadata {
+  id                      Int   @id @default(autoincrement())
+  probHuman               Float @default(0.5490)
+  probNotHuman            Float @default(0.4510)
+  probEdgeCountHuman      Float @default(38114.30)
+  probAspectRatioHuman    Float @default(0.00)
+  probBrightnessHuman     Float @default(103.97)
+  probLargestAreaHuman    Float @default(183978.79)
+  probSymmetryHuman       Float @default(124.66)
+  probEdgeCountNotHuman   Float @default(62026.07)
+  probAspectRatioNotHuman Float @default(0.00)
+  probBrightnessNotHuman  Float @default(112.64)
+  probLargestAreaNotHuman Float @default(309844.26)
+  probSymmetryNotHuman    Float @default(124.36)
+}

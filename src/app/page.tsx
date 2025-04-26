@@ -10,7 +10,19 @@ import { Slider } from "@/components/ui/slider";
 import { debounce, set } from "lodash";
 import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { FlipHorizontal, FlipVertical } from "lucide-react";
+import { BadgeX, FlipHorizontal, FlipVertical, Verified } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Morphology = ({ operation }: { operation: string }) => {
   const [processedUrl, setProcessedUrl] = useState<string | null>(null);
@@ -307,10 +319,206 @@ const Edge = () => {
   );
 };
 
+const Classifier = () => {
+  const { image, previewUrl } = useImageContext();
+  const [edgeCount, setEdgeCount] = useState<number>(0);
+  const [aspectRatio, setAspectRatio] = useState<number>(0);
+  const [brightness, setBrightness] = useState<number>(0);
+  const [largestArea, setLargestArea] = useState<number>(0);
+  const [symmetry, setSymmetry] = useState<number>(0);
+  const [selectedLabel, setSelectedLabel] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [classification, setClassification] = useState<string>("");
+
+  const sendImageForExtraction = async (image: File) => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", image);
+
+      const res = await fetch("http://localhost:5000/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      setEdgeCount(data.edge_count);
+      setAspectRatio(data.aspect_ratio);
+      setBrightness(data.brightness);
+      setLargestArea(data.largest_area);
+      setSymmetry(data.symmetry);
+    } catch (error) {
+      console.error("Error processing image:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedLabel) {
+      alert("Please select a class label");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("edgeCount", edgeCount.toString());
+    formData.append("aspectRatio", aspectRatio.toString());
+    formData.append("brightness", brightness.toString());
+    formData.append("largestArea", largestArea.toString());
+    formData.append("symmetry", symmetry.toString());
+    formData.append("label", selectedLabel);
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/store`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      console.log("Image stored successfully:", data);
+    } catch (error) {
+      console.error("Error storing image:", error);
+    }
+  };
+
+  const handleClassify = async () => {
+    setIsLoading(true);
+    setTimeout(async () => {
+      const res = await fetch("/api/classify", {
+        method: "POST",
+
+        headers: { "Content-Type": "application/json" },
+
+        body: JSON.stringify({
+          edgeCount,
+          aspectRatio,
+          brightness,
+          largestArea,
+          symmetry,
+        }),
+      });
+
+      const data = await res.json();
+
+      setClassification(data.class);
+      console.log(data);
+      setIsLoading(false);
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (image) {
+      sendImageForExtraction(image);
+    }
+  }, [image]);
+
+  return (
+    <div className="w-full h-full p-6 flex flex-col items-center justify-center">
+      <div className=" absolute top-35 right-85 flex flex-col gap-2 p-2 rounded-md">
+        <Popover>
+          <PopoverTrigger className="h-auto w-full bg-primary text-white py-1.5 rounded-md hover:bg-primary/90">
+            Stats
+          </PopoverTrigger>
+          <PopoverContent>
+            <div className=" p-4 rounded-lg my-6">
+              <h3 className="text-lg font-semibold mb-2">Image Statistics</h3>
+              <div className="flex justify-between py-2 border-b border-gray-200">
+                <span>Edge Count:</span>
+                <span>{edgeCount}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-200">
+                <span>Aspect Ratio:</span>
+                <span>{aspectRatio.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-200">
+                <span>Brightness:</span>
+                <span>{brightness.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-200">
+                <span>Largest Area:</span>
+                <span>{largestArea}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span>Symmetry:</span>
+                <span>{symmetry.toFixed(2)}</span>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        <Button className="h-auto w-full" onClick={handleClassify}>
+          Classify
+        </Button>
+        <Popover>
+          <PopoverTrigger className="h-auto w-full bg-primary text-white py-1.5 rounded-md hover:bg-primary/90">
+            Submit
+          </PopoverTrigger>
+          <PopoverContent className="flex justify-center items-center w-auto flex-col gap-5">
+            <Select value={selectedLabel} onValueChange={setSelectedLabel}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="class" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Human">Human</SelectItem>
+                <SelectItem value="Not Human">Not Human</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button className="h-auto w-full" onClick={handleSubmit}>
+              Submit
+            </Button>
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div
+        className={`h-130 w-160 ${previewUrl ? "bg-card" : "bg-muted"}  ${
+          previewUrl ? " border-muted border-2" : ""
+        } rounded-md p-2 ${previewUrl && !isLoading ? "" : "animate-pulse"}`}
+      >
+        {previewUrl && (
+          <Image
+            src={previewUrl}
+            alt="Preview"
+            height={250}
+            width={250}
+            className="rounded-md object-contain w-full h-full"
+          />
+        )}
+      </div>
+      {classification && !isLoading && (
+        <div
+          className={`mt-5 flex flex-row gap-2 p-4 rounded-lg text-center text-lg font-bold ${
+            classification === "Human"
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {classification}{" "}
+          {classification === "Human" ? <Verified /> : <BadgeX />}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Home() {
   const { image, previewUrl } = useImageContext();
-  const { isErosion, isDilation, isOpening, isClosing, isImageLoaded, isEdge } =
-    useFilterContext();
+  const {
+    isErosion,
+    isDilation,
+    isOpening,
+    isClosing,
+    isImageLoaded,
+    isEdge,
+    isClassifier,
+  } = useFilterContext();
 
   const [histogramData, setHistogramData] = useState<number[]>([]);
   const [fftImage, setFftImage] = useState<string>("");
@@ -361,6 +569,7 @@ export default function Home() {
               {isOpening && <Morphology operation="opening" />}
               {isClosing && <Morphology operation="closing" />}
               {isEdge && <Edge />}
+              {isClassifier && <Classifier />}
             </div>
           </div>
           <div className="w-full col-span-1">

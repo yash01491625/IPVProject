@@ -6,11 +6,11 @@ from PIL import Image
 import io
 import base64 
 from flask import send_file
-
+import requests
 
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 
@@ -153,6 +153,45 @@ def edge_detect():
     })
 
 
+@app.route('/extract', methods=['POST'])
+def extract_features():
+    try:
+        file = request.files['image']
+        img = Image.open(file.stream).convert("RGB")
+        img_np = np.array(img)
+        img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        
+        if gray.shape[1] % 2 != 0:  
+            gray = gray[:, :-1] 
+        
+        h, w = gray.shape
+        edges = cv2.Canny(gray, 100, 200)
+        edge_count = np.sum(edges > 0)
+
+        _, thresh = cv2.threshold(gray, 127, 255, 0)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        largest_area = max([cv2.contourArea(c) for c in contours], default=0)
+
+        aspect_ratio = w / h
+        brightness = np.mean(gray)
+
+        half = w // 2
+        left = gray[:, :half]
+        right = cv2.flip(gray[:, half:], 1)
+        symmetry = np.sum(np.abs(left - right)) / (h * half)
+
+        return jsonify({
+            "edge_count": int(edge_count),
+            "aspect_ratio": round(aspect_ratio, 2),
+            "brightness": round(brightness, 2),
+            "largest_area": int(largest_area),
+            "symmetry": round(symmetry, 2)
+        })
+
+    except Exception as e:
+        print(f"Error processing image: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':

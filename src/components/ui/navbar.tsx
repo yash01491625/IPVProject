@@ -46,8 +46,15 @@ export function FileUploadButton({
 
 export default function Navbar() {
   const { setImage, setPreviewUrl } = useImageContext();
-  const { isClosing, isDilation, isErosion, isOpening, isImageLoaded, isEdge } =
-    useFilterContext();
+  const {
+    isClosing,
+    isDilation,
+    isErosion,
+    isOpening,
+    isImageLoaded,
+    isEdge,
+    isClassifier,
+  } = useFilterContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const logo = "/logo.png";
@@ -117,6 +124,7 @@ export default function Navbar() {
                     {isClosing && "Closing"}
                     {isOpening && "Opening"}
                     {isEdge && "Edge Dectection"}
+                    {isClassifier && "Image Classifier"}
                     {isImageLoaded &&
                       !isErosion &&
                       !isDilation &&

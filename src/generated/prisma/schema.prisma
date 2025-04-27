@@ -1,0 +1,29 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model TrainingData {
+  id          Int      @id @default(autoincrement())
+  edgeCount   String
+  aspectRatio String
+  brightness  String
+  largestArea String
+  symmetry    String
+  label       String
+  createdAt   DateTime @default(now())
+}
+
+model NBMetadata {
+  id           Int   @id @default(autoincrement())
+  probHuman    Float
+  probNotHuman Float
+}

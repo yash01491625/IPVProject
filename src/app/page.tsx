@@ -7,8 +7,6 @@ import { useImageContext } from "./providers/ImageProvider";
 import ModifiedChart from "@/components/ui/modified-chart";
 import { useFilterContext } from "./providers/operationProvider";
 import { Slider } from "@/components/ui/slider";
-import { debounce, set } from "lodash";
-import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { BadgeX, FlipHorizontal, FlipVertical, Verified } from "lucide-react";
 import {
@@ -16,6 +14,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -46,20 +50,13 @@ const Morphology = ({ operation }: { operation: string }) => {
     setProcessedUrl(`data:image/png;base64,${data.processed}`);
   };
 
-  const debouncedSendImageForProcessing = useCallback(
-    debounce((image: File) => {
-      sendImageForProcessing(image);
-    }, 500),
-    [kernelSize, kernelType]
-  );
-
   useEffect(() => {
     setProcessedUrl(null);
   }, []);
 
   useEffect(() => {
     if (image) {
-      debouncedSendImageForProcessing(image);
+      sendImageForProcessing(image);
     }
   }, [kernelSize, kernelType]);
 
@@ -538,6 +535,563 @@ const Classifier = () => {
   );
 };
 
+const Sharpen = () => {
+  const { image, previewUrl, setPreviewUrl } = useImageContext();
+  const [sharpenedUrl, setSharpenedUrl] = useState<string | null>(null);
+
+  const sendImageForSharpening = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+
+    const res = await fetch(`http://localhost:5000/sharpen`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    setSharpenedUrl(`data:image/png;base64,${data.sharpened_image}`);
+  };
+
+  useEffect(() => {
+    if (image) {
+      sendImageForSharpening(image);
+    }
+  }, [image]);
+
+  return (
+    <div className="flex flex-col justify-center items-center">
+      <div className="flex flex-row justify-center items-center">
+        <div
+          className={`h-140 w-130 mr-3  ${
+            previewUrl ? "bg-card" : "bg-muted"
+          }  ${previewUrl ? " border-muted border-2" : ""} rounded-md p-2 ${
+            previewUrl ? "" : "animate-pulse"
+          }`}
+        >
+          {previewUrl && (
+            <Image
+              src={previewUrl}
+              alt="Preview"
+              height={250}
+              width={250}
+              className="rounded-md object-contain w-full h-full"
+            />
+          )}
+        </div>
+        <div
+          className={`h-140 w-130 ${sharpenedUrl ? "bg-card" : "bg-muted"}  ${
+            sharpenedUrl ? " border-muted border-2" : ""
+          } rounded-md p-2 ${sharpenedUrl ? "" : "animate-pulse"}`}
+        >
+          {sharpenedUrl && (
+            <Image
+              src={sharpenedUrl}
+              alt="Preview"
+              height={250}
+              width={250}
+              className="rounded-md object-contain w-full h-full"
+            />
+          )}
+        </div>
+      </div>
+      <div className="flex  flex-row justify-center items-center">
+        <div className="mr-100 mt-3 text-white font-semibold py-3 px-12 rounded-full bg-gradient-to-r from-primary to-pink-500">
+          Before
+        </div>
+        <div className="mt-3 text-white font-semibold py-3 px-12 rounded-full bg-gradient-to-r from-primary to-pink-500">
+          After
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Smooth = () => {
+  const [processedUrl, setProcessedUrl] = useState<string | null>(null);
+  const [kernelSize, setKernelSize] = useState(5);
+  const [blurType, setBlurType] = useState("average");
+  const { image, previewUrl } = useImageContext();
+
+  const sendImageForProcessing = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("blurType", blurType);
+    formData.append("kernelSize", kernelSize.toString());
+
+    const res = await fetch(`http://localhost:5000/smooth`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setProcessedUrl(`data:image/png;base64,${data.smoothed_image}`);
+  };
+
+  useEffect(() => {
+    setProcessedUrl(previewUrl);
+  }, []);
+
+  useEffect(() => {
+    if (image) {
+      sendImageForProcessing(image);
+    }
+  }, [kernelSize, blurType]);
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div
+        className={`h-135 w-180 ${previewUrl ? "bg-card" : "bg-muted"}  ${
+          previewUrl ? " border-muted border-2" : ""
+        } rounded-md p-2  ${previewUrl ? "" : "animate-pulse"} mb-10`}
+      >
+        {processedUrl && (
+          <Image
+            src={processedUrl}
+            alt="Preview"
+            height={250}
+            width={250}
+            className="rounded-md object-contain w-full h-full"
+          />
+        )}
+      </div>
+      <div
+        className={`h-45 w-230 bg-card border-muted border-2 rounded-md p-2 flex flex-row gap-3`}
+      >
+        <div
+          onClick={() => {
+            setBlurType("gaussian");
+          }}
+          className={`${
+            blurType === "gaussian" ? "border-2 border-primary" : ""
+          } w-45 h-full rounded-md bg-card grid grid-cols-5 gap-2 p-1 justify-center items-center hover:scale-97 tarnsition-all duration-200 ease-in-out active:scale-90`}
+        >
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-10" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-60" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-10" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-80" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-100" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-80" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-60" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-100" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-100" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-100" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-60" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-80" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-100" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-80" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-10" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-60" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-30" />
+          <div className="w-6 h-6 bg-primary rounded-[3px] opacity-10" />
+        </div>
+
+        <div
+          onClick={() => setBlurType("median")}
+          className={`${
+            blurType === "median" ? "border-2 border-primary" : ""
+          } w-45 h-full rounded-md bg-card grid grid-cols-5 gap-2 p-1 justify-center items-center hover:scale-97 transition-all duration-200 ease-in-out active:scale-90`}
+        >
+          {[
+            40, 100, 80, 100, 40, 100, 20, 100, 20, 80, 80, 20, 100, 20, 100,
+            40, 100, 80, 100, 40,
+          ].map((opacity, i) => (
+            <div
+              key={`median-${i}`}
+              className="w-6 h-6 bg-primary rounded-[3px]"
+              style={{ opacity: `${opacity}%` }}
+            />
+          ))}
+        </div>
+
+        <div
+          onClick={() => setBlurType("average")}
+          className={`${
+            blurType === "average" ? "border-2 border-primary" : ""
+          } w-45 h-full rounded-md bg-card grid grid-cols-5 gap-2 p-1 justify-center items-center hover:scale-97 transition-all duration-200 ease-in-out active:scale-90`}
+        >
+          {Array(20)
+            .fill(0)
+            .map((_, i) => (
+              <div
+                key={`avg-${i}`}
+                className="w-6 h-6 bg-primary rounded-[3px] opacity-70"
+              />
+            ))}
+        </div>
+
+        <div className="w-80 h-full rounded-md bg-card flex justify-center items-center p-10">
+          <Slider
+            defaultValue={[kernelSize]}
+            min={1}
+            max={100}
+            step={2}
+            onValueChange={(value) => {
+              setKernelSize(value[0]);
+            }}
+            className="w-full "
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BitPlane = () => {
+  const { image } = useImageContext();
+  const [bitPlanes, setBitPlanes] = useState<string[]>([]);
+
+  const sendImageForProcessing = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+
+    const res = await fetch(`http://localhost:5000/bitplane`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setBitPlanes(
+      data.bit_planes
+        .map((plane: string) => `data:image/png;base64,${plane}`)
+        .reverse()
+    );
+  };
+
+  useEffect(() => {
+    if (image) {
+      sendImageForProcessing(image);
+    }
+  }, [image]);
+
+  return (
+    <div>
+      <div className="flex flex-row justify-center items-center mb-5">
+        {bitPlanes.slice(0, 3).map((plane, index) => (
+          <div
+            key={`plane-${index}`}
+            className="h-90 w-80 mr-5 bg-card border-muted border-2 rounded-md p-2"
+          >
+            {plane && (
+              <Image
+                src={plane}
+                alt={`Bit Plane ${index + 1}`}
+                height={250}
+                width={250}
+                className="rounded-md object-contain w-full h-full"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-row justify-center items-center">
+        {bitPlanes.slice(3, 6).map((plane, index) => (
+          <div
+            key={`plane-${index + 3}`}
+            className="h-90 w-80 mr-5 bg-card border-muted border-2 rounded-md p-2"
+          >
+            {plane && (
+              <Image
+                src={plane}
+                alt={`Bit Plane ${index + 4}`}
+                height={250}
+                width={250}
+                className="rounded-md object-contain w-full h-full"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const Thresholding = () => {
+  const [processedUrl, setProcessedUrl] = useState<string | null>(null);
+  const [method, setMethod] = useState("simple");
+  const { image, previewUrl } = useImageContext();
+
+  const sendImageForProcessing = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("method", method);
+
+    const res = await fetch(`http://localhost:5000/threshold`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setProcessedUrl(`data:image/png;base64,${data.processed}`);
+  };
+
+  useEffect(() => {
+    setProcessedUrl(previewUrl);
+  }, []);
+
+  useEffect(() => {
+    if (image) {
+      sendImageForProcessing(image);
+    }
+  }, [method]);
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div
+        className={`h-135 w-180 ${previewUrl ? "bg-card" : "bg-muted"}  ${
+          previewUrl ? " border-muted border-2" : ""
+        } rounded-md p-2  ${previewUrl ? "" : "animate-pulse"} mb-10`}
+      >
+        {processedUrl && (
+          <Image
+            src={processedUrl}
+            alt="Preview"
+            height={250}
+            width={250}
+            className="rounded-md object-contain w-full h-full"
+          />
+        )}
+      </div>
+      <div
+        className={`h-45 w-90 bg-card border-muted border-2 rounded-md p-2 flex flex-row gap-3 justify-center items-center`}
+      >
+        <Button
+          onClick={() => {
+            setMethod("simple");
+          }}
+          className="text-xl p-5"
+        >
+          Simple
+        </Button>
+        <Button
+          onClick={() => {
+            setMethod("adaptive");
+          }}
+          className="text-xl p-5"
+        >
+          Adaptive
+        </Button>
+        <Button
+          onClick={() => {
+            setMethod("otsu");
+          }}
+          className="text-xl p-5"
+        >
+          Otsu
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const Filter = () => {
+  const [processedUrl, setProcessedUrl] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState("sharpen");
+  const { image, previewUrl } = useImageContext();
+
+  const filters = [
+    {
+      type: "sharpen",
+      label: "Sharpen",
+      description: "Enhances edges and details",
+    },
+    {
+      type: "edge",
+      label: "Edge",
+      description: "Highlights edges in the image",
+    },
+    {
+      type: "emboss",
+      label: "Emboss",
+      description: "Creates 3D embossed effect",
+    },
+    {
+      type: "outline",
+      label: "Outline",
+      description: "Detects object outlines",
+    },
+    { type: "blur", label: "Blur", description: "Softens and blurs the image" },
+    {
+      type: "starburst",
+      label: "Starburst",
+      description: "Creates a radial enhancement effect",
+    },
+    {
+      type: "glow",
+      label: "Glow",
+      description: "Creates a glowing halo effect",
+    },
+    { type: "motion", label: "Motion", description: "Simulates motion blur" },
+    {
+      type: "crystallize",
+      label: "Crystal",
+      description: "Adds crystalline texture",
+    },
+    {
+      type: "easter",
+      label: "Easter",
+      description: "Special decorative effect",
+    },
+  ];
+
+  const sendImageForProcessing = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("filterType", filterType);
+
+    const res = await fetch(`http://localhost:5000/filter`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setProcessedUrl(`data:image/png;base64,${data.processed}`);
+  };
+
+  useEffect(() => {
+    setProcessedUrl(previewUrl);
+  }, []);
+
+  useEffect(() => {
+    if (image) {
+      sendImageForProcessing(image);
+    }
+  }, [filterType]);
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-6">
+      <div
+        className={`h-135 w-180 ${previewUrl ? "bg-card" : "bg-muted"} ${
+          previewUrl ? "border-muted border-2" : ""
+        } rounded-md p-2 ${previewUrl ? "" : "animate-pulse"}`}
+      >
+        {processedUrl && (
+          <Image
+            src={processedUrl}
+            alt="Filtered Preview"
+            height={250}
+            width={250}
+            className="rounded-md object-contain w-full h-full"
+          />
+        )}
+      </div>
+
+      <div className="w-full max-w-2xl">
+        <div className="bg-card border-muted border-2 rounded-md p-4">
+          <h3 className="text-center mb-3 font-medium">Filter Effects</h3>
+          <div className="grid grid-cols-5 gap-2">
+            <TooltipProvider>
+              {filters.map((filter) => (
+                <Tooltip key={filter.type}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={
+                        filterType === filter.type ? "default" : "outline"
+                      }
+                      onClick={() => setFilterType(filter.type)}
+                      className="h-12 text-xs p-2 whitespace-normal"
+                    >
+                      {filter.label}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{filter.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </TooltipProvider>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Bitwise = () => {
+  const [processedUrl, setProcessedUrl] = useState<string | null>(null);
+  const [operation, setOperation] = useState("and");
+  const { image, previewUrl } = useImageContext();
+
+  const sendImageForProcessing = async (image: File) => {
+    const formData = new FormData();
+    formData.append("image", image);
+    formData.append("operation", operation);
+
+    const res = await fetch(`http://localhost:5000/bitwise`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setProcessedUrl(`data:image/png;base64,${data.bitwise_image}`);
+  };
+
+  useEffect(() => {
+    setProcessedUrl(previewUrl);
+  }, []);
+
+  useEffect(() => {
+    if (image) {
+      sendImageForProcessing(image);
+    }
+  }, [operation]);
+
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <div
+        className={`h-135 w-180 ${previewUrl ? "bg-card" : "bg-muted"}  ${
+          previewUrl ? " border-muted border-2" : ""
+        } rounded-md p-2  ${previewUrl ? "" : "animate-pulse"} mb-10`}
+      >
+        {processedUrl && (
+          <Image
+            src={processedUrl}
+            alt="Preview"
+            height={250}
+            width={250}
+            className="rounded-md object-contain w-full h-full"
+          />
+        )}
+      </div>
+      <div
+        className={`h-45 w-90 bg-card border-muted border-2 rounded-md p-2 flex flex-row gap-3 justify-center items-center`}
+      >
+        <Button
+          onClick={() => {
+            setOperation("and");
+          }}
+          className="text-2xl p-7"
+        >
+          AND
+        </Button>
+        <Button
+          onClick={() => {
+            setOperation("or");
+          }}
+          className="text-2xl p-7"
+        >
+          OR
+        </Button>
+        <Button
+          onClick={() => {
+            setOperation("xor");
+          }}
+          className="text-2xl p-7"
+        >
+          XOR
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const { image, previewUrl } = useImageContext();
   const {
@@ -548,6 +1102,12 @@ export default function Home() {
     isImageLoaded,
     isEdge,
     isClassifier,
+    isSharpen,
+    isSmooth,
+    isBitPlane,
+    isBitWise,
+    isThreshold,
+    isFilter,
   } = useFilterContext();
 
   const [histogramData, setHistogramData] = useState<number[]>([]);
@@ -600,6 +1160,12 @@ export default function Home() {
               {isClosing && <Morphology operation="closing" />}
               {isEdge && <Edge />}
               {isClassifier && <Classifier />}
+              {isSharpen && <Sharpen />}
+              {isSmooth && <Smooth />}
+              {isBitPlane && <BitPlane />}
+              {isBitWise && <Bitwise />}
+              {isThreshold && <Thresholding />}
+              {isFilter && <Filter />}
             </div>
           </div>
           <div className="w-full col-span-1">

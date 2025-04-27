@@ -47,6 +47,7 @@ export function FileUploadButton({
 export default function Navbar() {
   const { setImage, setPreviewUrl } = useImageContext();
   const {
+    isBitPlane,
     isClosing,
     isDilation,
     isErosion,
@@ -54,6 +55,11 @@ export default function Navbar() {
     isImageLoaded,
     isEdge,
     isClassifier,
+    isSharpen,
+    isSmooth,
+    isBitWise,
+    isFilter,
+    isThreshold,
   } = useFilterContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -125,6 +131,12 @@ export default function Navbar() {
                     {isOpening && "Opening"}
                     {isEdge && "Edge Dectection"}
                     {isClassifier && "Image Classifier"}
+                    {isSharpen && "Sharpening"}
+                    {isSmooth && "Smoothing"}
+                    {isBitPlane && "Bit Plane Slicing"}
+                    {isBitWise && "BitWise Operations"}
+                    {isThreshold && "Thresholding"}
+                    {isFilter && "Filtering"}
                     {isImageLoaded &&
                       !isErosion &&
                       !isDilation &&
